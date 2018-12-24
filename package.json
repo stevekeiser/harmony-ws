@@ -15,10 +15,11 @@
   "author": "Steve Keiser",
   "license": "MIT",
   "keywords": [
-    "async",
-    "callback",
-    "module",
-    "utility"
+    "harmony",
+    "websocket",
+    "remote",
+    "harmony-hub",
+    "logitech"
   ],
   "devDependencies": {
     "babel-cli": "^6.26.0",

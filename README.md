@@ -7,11 +7,23 @@ const hub = new HarmonyHub('192.168.1.20');
 
 hub.getActivities()
     .then((list) => {
-        console.log('Activities:', list);
+        console.log(list);
+        // [
+        //    { id: '-1', label: 'PowerOff' },
+        //    { id: '21642159', label: 'Chromecast' },
+        //    { id: '26240332', label: 'TV' },
+        //    { id: '26240296', label: 'Roku' },
+        //    { id: '21641746', label: 'Blu-ray' }
+        // ]
     })
 
-hub.runActivity(-1)
+hub.getCurrentActivity()
+    .then((id) => {
+        console.log(`Current activity is: ${id}`);
+    })
+
+hub.runActivity('21642159')
     .then(() => {
-        console.log(`Turned off`);
+        console.log('Started Chromecast');
     })
 ```
