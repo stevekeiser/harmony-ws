@@ -1,13 +1,15 @@
 'use strict';
 
-var _index = require('../dist/index.js');
+var _ = require('.');
 
-var _index2 = _interopRequireDefault(_index);
+var _2 = _interopRequireDefault(_);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var hub = new _index2.default('192.168.1.20');
+// import HarmonyHub from '../dist/index.js';
 
-hub.getCurrentActivity().then(function (id) {
-    console.log('Current activity is: ' + id);
+var hub = new _2.default('192.168.1.20');
+
+hub.getActivities().then(function (list) {
+    console.log('Activities:', list);
 });

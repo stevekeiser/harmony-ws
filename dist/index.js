@@ -6,6 +6,10 @@ Object.defineProperty(exports, "__esModule", {
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
+var _lodash = require('lodash');
+
+var _lodash2 = _interopRequireDefault(_lodash);
+
 var _url = require('url');
 
 var _url2 = _interopRequireDefault(_url);
@@ -113,9 +117,11 @@ var HarmonyHub = function () {
 				var cmd = ENGINE + '?config';
 				var params = { verb: 'get', format: 'json' };
 				runCmd(_this.ip, cmd, params, function (err, ob) {
-					if (err) return reject();
+					if (err) return reject(err);
+					var activities = _lodash2.default.get(ob, 'data.activity');
+					if (!activities) return reject('Activities not found');
 					var list = [];
-					ob.data.activity.forEach(function (activity) {
+					activities.forEach(function (activity) {
 						var id = activity.id,
 						    label = activity.label;
 
@@ -130,6 +136,7 @@ var HarmonyHub = function () {
 		value: function runActivity(id) {
 			var _this2 = this;
 
+			id = _lodash2.default.trim(id);
 			return new Promise(function (resolve, reject) {
 				var cmd = 'harmony.activityengine?runactivity';
 				var params = {
@@ -153,8 +160,10 @@ var HarmonyHub = function () {
 				var cmd = ENGINE + '?getCurrentActivity';
 				var params = { verb: 'get', format: 'json' };
 				runCmd(_this3.ip, cmd, params, function (err, ob) {
-					if (err) return reject();
-					resolve(ob.data.result);
+					if (err) return reject(err);
+					var activityId = _lodash2.default.get(ob, 'data.result');
+					if (!activityId) return reject('Activity not found');
+					resolve(activityId);
 				});
 			});
 		}
