@@ -1,5 +1,7 @@
 # harmony-ws
 
+Websocket-based interface for the Harmony Hub. Works with the latest firmware that killed support for XMPP.
+
 ```javascript
 import HarmonyHub from 'harmony-ws';
 
