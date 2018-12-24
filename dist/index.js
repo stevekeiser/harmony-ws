@@ -173,3 +173,5 @@ var HarmonyHub = function () {
 }();
 
 exports.default = HarmonyHub;
+
+module.exports = HarmonyHub;
