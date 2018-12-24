@@ -72,7 +72,7 @@ const runCmd = (ip, cmd, params, callback) => {
 	});
 };
 
-export default class HarmonyHub {
+class HarmonyHub {
 	constructor(ip) {
 		this.ip = ip;
 	}
@@ -125,3 +125,6 @@ export default class HarmonyHub {
 		});
 	}
 }
+
+export default HarmonyHub;
+module.exports = HarmonyHub;
