@@ -7,6 +7,7 @@ const PORT = '8088';
 const MSG_ID = 54321;
 const TIMEOUT = 10000;
 const ENGINE = 'vnd.logitech.harmony/vnd.logitech.harmony.engine';
+const NOTIFY = 'connect.stateDigest?notify';
 
 const getHubInfo = (ip, callback) => {
 	const config = {
@@ -121,6 +122,22 @@ class HarmonyHub {
 				const activityId = _.get(ob, 'data.result');
 				if (!activityId) return reject('Activity not found');
 				resolve(activityId);
+			});
+		});
+	}
+
+	onActivityStarted(callback) {
+		getHubInfo(this.ip, (err, { url }) => {
+			if (err) return;
+			let lastActivityId = null;
+			const socket = new WebSocket(url);
+			socket.on('message', (data) => {
+				const ob = JSON.parse(data);
+				const activityId = _.get(ob, 'data.activityId', false);
+				if (ob.type === NOTIFY && activityId !== false && lastActivityId !== activityId) {
+					lastActivityId = activityId;
+					callback(activityId);
+				}
 			});
 		});
 	}

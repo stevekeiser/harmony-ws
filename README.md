@@ -22,10 +22,14 @@ hub.getActivities()
 hub.getCurrentActivity()
     .then((id) => {
         console.log(`Current activity is: ${id}`);
-    })
+    });
 
 hub.runActivity('21642159')
     .then(() => {
         console.log('Started Chromecast');
-    })
+    });
+
+hub.onActivityStarted((id) => {
+    console.log(`Activity started: ${id}`);
+});
 ```

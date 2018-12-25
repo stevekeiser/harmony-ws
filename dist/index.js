@@ -30,6 +30,7 @@ var PORT = '8088';
 var MSG_ID = 54321;
 var TIMEOUT = 10000;
 var ENGINE = 'vnd.logitech.harmony/vnd.logitech.harmony.engine';
+var NOTIFY = 'connect.stateDigest?notify';
 
 var getHubInfo = function getHubInfo(ip, callback) {
 	var config = {
@@ -164,6 +165,25 @@ var HarmonyHub = function () {
 					var activityId = _lodash2.default.get(ob, 'data.result');
 					if (!activityId) return reject('Activity not found');
 					resolve(activityId);
+				});
+			});
+		}
+	}, {
+		key: 'onActivityStarted',
+		value: function onActivityStarted(callback) {
+			getHubInfo(this.ip, function (err, _ref2) {
+				var url = _ref2.url;
+
+				if (err) return;
+				var lastActivityId = null;
+				var socket = new _ws2.default(url);
+				socket.on('message', function (data) {
+					var ob = JSON.parse(data);
+					var activityId = _lodash2.default.get(ob, 'data.activityId', false);
+					if (ob.type === NOTIFY && activityId !== false && lastActivityId !== activityId) {
+						lastActivityId = activityId;
+						callback(activityId);
+					}
 				});
 			});
 		}
