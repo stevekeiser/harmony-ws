@@ -62,7 +62,10 @@ var getHubInfo = function getHubInfo(ip, callback) {
 };
 
 var runCmd = function runCmd(ip, cmd, params, callback) {
+	var ops = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {};
+
 	var pending = true;
+	ops.repeat = ops.repeat || 1;
 
 	var timeout = setTimeout(function () {
 		pending = false;
@@ -89,7 +92,13 @@ var runCmd = function runCmd(ip, cmd, params, callback) {
 				timeout: Math.floor(TIMEOUT / 1000),
 				hbus: { cmd: cmd, id: MSG_ID, params: params }
 			};
-			socket.send(JSON.stringify(payload));
+			for (var i = 0; i <= ops.repeat; i++) {
+				socket.send(JSON.stringify(payload));
+			}
+			if (ops.wait === false) {
+				done();
+				socket.close();
+			}
 		});
 
 		socket.on('message', function (data) {
@@ -114,6 +123,8 @@ var HarmonyHub = function () {
 		value: function getActivities() {
 			var _this = this;
 
+			var digest = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
+
 			return new Promise(function (resolve, reject) {
 				var cmd = ENGINE + '?config';
 				var params = { verb: 'get', format: 'json' };
@@ -121,6 +132,7 @@ var HarmonyHub = function () {
 					if (err) return reject(err);
 					var activities = _lodash2.default.get(ob, 'data.activity');
 					if (!activities) return reject('Activities not found');
+					if (!digest) return resolve(activities);
 					var list = [];
 					activities.forEach(function (activity) {
 						var id = activity.id,
@@ -184,6 +196,49 @@ var HarmonyHub = function () {
 						lastActivityId = activityId;
 						callback(activityId);
 					}
+				});
+			});
+		}
+
+		// todo: cache socket and config information
+
+	}, {
+		key: 'pressButton',
+		value: function pressButton(button) {
+			var _this4 = this;
+
+			var repeat = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 1;
+
+			button = _lodash2.default.trim(button);
+			repeat = parseInt(repeat);
+			if (repeat < 1) repeat = 1;
+			return new Promise(function (resolve, reject) {
+				if (repeat > 100) return reject('Repeat can\'t be above 100');
+				_this4.getCurrentActivity().then(function (id) {
+					if (id === '-1') return reject('No running activity');
+					_this4.getActivities(false).then(function (list) {
+						var activity = _lodash2.default.find(list, { id: id });
+						if (!activity) return reject('Activity not found');
+						var item = null;
+						for (var i = 0; i < activity.controlGroup.length; i++) {
+							var group = activity.controlGroup[i];
+							item = _lodash2.default.find(group.function, { name: button });
+							if (item) break;
+						}
+						if (!item) return reject('Button not found');
+						var cmd = ENGINE + '?holdAction';
+						var params = {
+							timestamp: 0,
+							verb: 'render',
+							status: 'press',
+							action: item.action
+						};
+						runCmd(_this4.ip, cmd, params, resolve, { wait: false, repeat: repeat });
+					}).catch(function (err) {
+						return reject(err);
+					});
+				}).catch(function (err) {
+					return reject(err);
 				});
 			});
 		}

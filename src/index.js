@@ -35,8 +35,9 @@ const getHubInfo = (ip, callback) => {
 	});
 };
 
-const runCmd = (ip, cmd, params, callback) => {
+const runCmd = (ip, cmd, params, callback, ops = {}) => {
 	let pending = true;
+	ops.repeat = ops.repeat || 1;
 
 	const timeout = setTimeout(() => {
 		pending = false;
@@ -60,7 +61,13 @@ const runCmd = (ip, cmd, params, callback) => {
 				timeout: Math.floor(TIMEOUT / 1000),
 				hbus: { cmd, id: MSG_ID, params },
 			};
-			socket.send(JSON.stringify(payload));
+			for (let i = 0; i <= ops.repeat; i++) {
+				socket.send(JSON.stringify(payload));
+			}
+			if (ops.wait === false) {
+				done();
+				socket.close();
+			}
 		});
 
 		socket.on('message', (data) => {
@@ -78,7 +85,7 @@ class HarmonyHub {
 		this.ip = ip;
 	}
 
-	getActivities() {
+	getActivities(digest = true) {
 		return new Promise((resolve, reject) => {
 			const cmd = `${ENGINE}?config`;
 			const params = { verb: 'get', format: 'json' };
@@ -86,6 +93,7 @@ class HarmonyHub {
 				if (err) return reject(err);
 				const activities = _.get(ob, 'data.activity');
 				if (!activities) return reject('Activities not found');
+				if (!digest) return resolve(activities);
 				const list = [];
 				activities.forEach((activity) => {
 					const { id, label } = activity;
@@ -139,6 +147,42 @@ class HarmonyHub {
 					callback(activityId);
 				}
 			});
+		});
+	}
+
+	// todo: cache socket and config information
+	pressButton(button, repeat = 1) {
+		button = _.trim(button);
+		repeat = parseInt(repeat);
+		if (repeat < 1) repeat = 1;
+		return new Promise((resolve, reject) => {
+			if (repeat > 100) return reject(`Repeat can't be above 100`);
+			this.getCurrentActivity()
+				.then((id) => {
+					if (id === '-1') return reject('No running activity');
+					this.getActivities(false)
+						.then((list) => {
+							const activity = _.find(list, { id });
+							if (!activity) return reject('Activity not found');
+							let item = null;
+							for (let i = 0; i < activity.controlGroup.length; i++) {
+								const group = activity.controlGroup[i];
+								item = _.find(group.function, { name: button });
+								if (item) break;
+							}
+							if (!item) return reject('Button not found');
+							const cmd = `${ENGINE}?holdAction`;
+							const params = {
+								timestamp: 0,
+								verb: 'render',
+								status: 'press',
+								action: item.action,
+							};
+							runCmd(this.ip, cmd, params, resolve, { wait: false, repeat });
+						})
+						.catch((err) => reject(err));
+				})
+				.catch((err) => reject(err));
 		});
 	}
 }

@@ -29,6 +29,13 @@ hub.runActivity('21642159')
         console.log('Started Chromecast');
     });
 
+// press a button relative to the current activity
+hub.pressButton('VolumeDown', 5)
+    .then(() => {
+        console.log('Lowered the volume by 5 steps');
+    });
+
+// listen for changes to the current activity
 hub.onActivityStarted((id) => {
     console.log(`Activity started: ${id}`);
 });
