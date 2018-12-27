@@ -8,35 +8,35 @@ import HarmonyHub from 'harmony-ws';
 const hub = new HarmonyHub('192.168.1.20');
 
 hub.getActivities()
-    .then((list) => {
-        console.log(list);
+    .then((activities) => {
+        console.log(activities);
         // [
-        //    { id: '-1', label: 'PowerOff' },
-        //    { id: '21642159', label: 'Chromecast' },
-        //    { id: '26240332', label: 'TV' },
-        //    { id: '26240296', label: 'Roku' },
-        //    { id: '21641746', label: 'Blu-ray' }
+        //    { id: '-1', name: 'PowerOff' },
+        //    { id: '21642159', name: 'Chromecast' },
+        //    { id: '26240332', name: 'TV' },
+        //    { id: '26240296', name: 'Roku' },
+        //    { id: '21641746', name: 'Blu-ray' }
         // ]
     })
 
 hub.getCurrentActivity()
-    .then((id) => {
-        console.log(`Current activity is: ${id}`);
+    .then((activity) => {
+        console.log(`Current activity is: ${activity.name}`);
     });
 
-hub.runActivity('21642159')
+hub.runActivity('Chromecast')
     .then(() => {
         console.log('Started Chromecast');
     });
 
 // press a button relative to the current activity
-hub.pressButton('VolumeDown', 5)
+hub.pressButton('volume down', 2000)
     .then(() => {
-        console.log('Lowered the volume by 5 steps');
+        console.log('Pressed volume down for 2 seconds');
     });
 
 // listen for changes to the current activity
-hub.onActivityStarted((id) => {
-    console.log(`Activity started: ${id}`);
+hub.onActivityStarted((activity) => {
+    console.log(`Activity started: ${activity.name}`);
 });
 ```
