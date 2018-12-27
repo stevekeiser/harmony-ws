@@ -37,6 +37,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 // constants
 var PORT = '8088';
 var TIMEOUT = 10000;
+var PING_INTERVAL = 10000;
 var ENGINE = 'vnd.logitech.harmony/vnd.logitech.harmony.engine';
 var EVENT_NOTIFY = 'connect.stateDigest?notify';
 
@@ -51,6 +52,7 @@ var _callbacks = Symbol('callbacks');
 var _timeouts = Symbol('timeouts');
 var _started = Symbol('started');
 var _lastActivityId = Symbol('lastActivityId');
+var _pingCount = Symbol('pingCount');
 
 // private methods
 var _initSocket = Symbol('initSocket');
@@ -58,6 +60,7 @@ var _getConfig = Symbol('getConfig');
 var _runCmd = Symbol('runCmd');
 var _pressButton = Symbol('pressButton');
 var _handleNotify = Symbol('handleNotify');
+var _resetSocket = Symbol('resetSocket');
 
 var HarmonyHub = function () {
 	function HarmonyHub(ip) {
@@ -69,6 +72,7 @@ var HarmonyHub = function () {
 		this[_socket] = null;
 		this[_started] = false;
 		this[_lastActivityId] = null;
+		this[_pingCount] = 0;
 		this[_queue] = [];
 		this[_config] = {};
 		this[_timeouts] = {};
@@ -114,6 +118,14 @@ var HarmonyHub = function () {
 				socket.on('open', function (err) {
 					if (err) return callback(err);
 					_this[_socket] = socket;
+					_this[_timeouts].socket = setInterval(function () {
+						socket.ping();
+						_this[_pingCount]++;
+						if (_this[_pingCount] >= 2) {
+							socket.close();
+							_this[_resetSocket]();
+						}
+					}, PING_INTERVAL);
 					_this[_getConfig](function (err) {
 						callback(err);
 						_this[_queue].forEach(function (cb) {
@@ -138,12 +150,21 @@ var HarmonyHub = function () {
 					} catch (err) {}
 				});
 
+				socket.on('pong', function () {
+					_this[_pingCount] = 0;
+				});
+
 				socket.on('close', function () {
-					// todo: ping socket and reconnect
-					_this[_socket] = null;
-					_this[_started] = false;
+					_this[_resetSocket]();
 				});
 			});
+		}
+	}, {
+		key: _resetSocket,
+		value: function value() {
+			this[_socket] = null;
+			this[_started] = false;
+			clearInterval(this[_timeouts].socket);
 		}
 	}, {
 		key: _getConfig,
@@ -190,6 +211,8 @@ var HarmonyHub = function () {
 			var _this4 = this;
 
 			if (!_lodash2.default.isFunction(this[_callbacks].onActivityStarted)) return;
+			var status = _lodash2.default.get(ob, 'data.activityStatus');
+			if (![0, 1].includes(status)) return;
 			var id = _lodash2.default.get(ob, 'data.activityId', false);
 			if (id === false || this[_lastActivityId] === id) return;
 			this[_lastActivityId] = id;

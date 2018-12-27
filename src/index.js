@@ -8,6 +8,7 @@ import changeCase from 'change-case';
 // constants
 const PORT = '8088';
 const TIMEOUT = 10000;
+const PING_INTERVAL = 10000;
 const ENGINE = 'vnd.logitech.harmony/vnd.logitech.harmony.engine';
 const EVENT_NOTIFY = 'connect.stateDigest?notify';
 
@@ -22,6 +23,7 @@ const _callbacks = Symbol('callbacks');
 const _timeouts = Symbol('timeouts');
 const _started = Symbol('started');
 const _lastActivityId = Symbol('lastActivityId');
+const _pingCount = Symbol('pingCount');
 
 // private methods
 const _initSocket = Symbol('initSocket');
@@ -29,6 +31,7 @@ const _getConfig = Symbol('getConfig');
 const _runCmd = Symbol('runCmd');
 const _pressButton = Symbol('pressButton');
 const _handleNotify = Symbol('handleNotify');
+const _resetSocket = Symbol('resetSocket');
 
 class HarmonyHub {
 	constructor(ip) {
@@ -38,6 +41,7 @@ class HarmonyHub {
 		this[_socket] = null;
 		this[_started] = false;
 		this[_lastActivityId] = null;
+		this[_pingCount] = 0;
 		this[_queue] = [];
 		this[_config] = {};
 		this[_timeouts] = {};
@@ -79,6 +83,14 @@ class HarmonyHub {
 			socket.on('open', (err) => {
 				if (err) return callback(err);
 				this[_socket] = socket;
+				this[_timeouts].socket = setInterval(() => {
+					socket.ping();
+					this[_pingCount]++;
+					if (this[_pingCount] >= 2) {
+						socket.close();
+						this[_resetSocket]();
+					}
+				}, PING_INTERVAL);
 				this[_getConfig]((err) => {
 					callback(err);
 					this[_queue].forEach((cb) => cb(err));
@@ -99,12 +111,20 @@ class HarmonyHub {
 				} catch (err) {}
 			});
 
+			socket.on('pong', () => {
+				this[_pingCount] = 0;
+			});
+
 			socket.on('close', () => {
-				// todo: ping socket and reconnect
-				this[_socket] = null;
-				this[_started] = false;
+				this[_resetSocket]();
 			});
 		});
+	}
+
+	[_resetSocket]() {
+		this[_socket] = null;
+		this[_started] = false;
+		clearInterval(this[_timeouts].socket);
 	}
 
 	[_getConfig](callback) {
@@ -139,6 +159,8 @@ class HarmonyHub {
 
 	[_handleNotify](ob) {
 		if (!_.isFunction(this[_callbacks].onActivityStarted)) return;
+		const status = _.get(ob, 'data.activityStatus');
+		if (![0, 1].includes(status)) return;
 		const id = _.get(ob, 'data.activityId', false);
 		if (id === false || this[_lastActivityId] === id) return;
 		this[_lastActivityId] = id;
