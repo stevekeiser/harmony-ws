@@ -11,10 +11,9 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 var hub = new _2.default('192.168.1.20');
 
-// hub.getActivities()
-//     .then((list) => {
-//         console.log(list);
-//     })
+hub.getActivities().then(function (list) {
+  console.log(list);
+});
 
 // hub.getCurrentActivity()
 //     .then((activity) => {
@@ -31,6 +30,6 @@ var hub = new _2.default('192.168.1.20');
 //         console.log('Pressed button');
 //     });
 
-hub.onActivityStarted(function (activity) {
-  console.log('Activity started: ' + activity.name);
-});
+// hub.onActivityStarted((activity) => {
+//     console.log(`Activity started: ${activity.name}`);
+// });

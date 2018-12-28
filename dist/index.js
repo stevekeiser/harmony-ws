@@ -121,10 +121,7 @@ var HarmonyHub = function () {
 					_this[_timeouts].socket = setInterval(function () {
 						socket.ping();
 						_this[_pingCount]++;
-						if (_this[_pingCount] >= 2) {
-							socket.close();
-							_this[_resetSocket]();
-						}
+						if (_this[_pingCount] >= 2) _this[_resetSocket]();
 					}, PING_INTERVAL);
 					_this[_getConfig](function (err) {
 						callback(err);
@@ -155,13 +152,16 @@ var HarmonyHub = function () {
 				});
 
 				socket.on('close', function () {
-					_this[_resetSocket]();
+					_this[_resetSocket](false);
 				});
 			});
 		}
 	}, {
 		key: _resetSocket,
 		value: function value() {
+			var close = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
+
+			if (close && this[_socket]) this[_socket].close();
 			this[_socket] = null;
 			this[_started] = false;
 			clearInterval(this[_timeouts].socket);
@@ -248,20 +248,34 @@ var HarmonyHub = function () {
 			_async2.default.eachSeries(list, run, callback);
 		}
 	}, {
-		key: 'getActivities',
-		value: function getActivities() {
+		key: 'refresh',
+		value: function refresh() {
 			var _this6 = this;
 
+			this[_resetSocket]();
 			return new Promise(function (resolve, reject) {
 				_this6[_initSocket](function (err) {
 					if (err) return reject(err);
-					var activities = _lodash2.default.get(_this6[_config], 'data.activity');
+					resolve();
+				});
+			});
+		}
+	}, {
+		key: 'getActivities',
+		value: function getActivities() {
+			var _this7 = this;
+
+			return new Promise(function (resolve, reject) {
+				_this7[_initSocket](function (err) {
+					if (err) return reject(err);
+					var activities = _lodash2.default.get(_this7[_config], 'data.activity');
 					if (!activities) return reject('Activities not found');
 					var list = [];
 					activities.forEach(function (activity) {
 						var id = activity.id,
-						    name = activity.label;
+						    label = activity.label;
 
+						var name = id === '-1' ? 'off' : _changeCase2.default.snake(_lodash2.default.trim(label));
 						list.push({ id: id, name: name });
 					});
 					resolve(list);
@@ -269,13 +283,13 @@ var HarmonyHub = function () {
 			});
 		}
 	}, {
-		key: 'runActivity',
-		value: function runActivity(id) {
-			var _this7 = this;
+		key: 'startActivity',
+		value: function startActivity(id) {
+			var _this8 = this;
 
-			id = _lodash2.default.trim(id);
+			id = _changeCase2.default.snake(_lodash2.default.trim(id));
 			return new Promise(function (resolve, reject) {
-				_this7.getActivities().then(function (activities) {
+				_this8.getActivities().then(function (activities) {
 					var activity = _lodash2.default.find(activities, { name: id });
 					if (!activity) activity = _lodash2.default.find(activities, { id: id });
 					if (!activity) return reject('Activity not found');
@@ -286,7 +300,7 @@ var HarmonyHub = function () {
 						args: { rule: 'start' },
 						activityId: activity.id
 					};
-					_this7[_runCmd]({ cmd: cmd, params: params }, function (err) {
+					_this8[_runCmd]({ cmd: cmd, params: params }, function (err) {
 						if (err) return reject(err);
 						resolve();
 					});
@@ -298,16 +312,16 @@ var HarmonyHub = function () {
 	}, {
 		key: 'getCurrentActivity',
 		value: function getCurrentActivity() {
-			var _this8 = this;
+			var _this9 = this;
 
 			return new Promise(function (resolve, reject) {
 				var cmd = ENGINE + '?getCurrentActivity';
 				var params = { verb: 'get', format: 'json' };
-				_this8[_runCmd]({ cmd: cmd, params: params }, function (err, ob) {
+				_this9[_runCmd]({ cmd: cmd, params: params }, function (err, ob) {
 					if (err) return reject(err);
 					var id = _lodash2.default.get(ob, 'data.result');
 					if (!id) return reject('Activity not found');
-					_this8.getActivities().then(function (activities) {
+					_this9.getActivities().then(function (activities) {
 						var activity = _lodash2.default.find(activities, { id: id });
 						if (!activity) return reject('Activity not found');
 						resolve(activity);
@@ -320,16 +334,16 @@ var HarmonyHub = function () {
 	}, {
 		key: 'onActivityStarted',
 		value: function onActivityStarted(callback) {
-			var _this9 = this;
+			var _this10 = this;
 
 			this[_initSocket](function () {
-				_this9[_callbacks].onActivityStarted = callback;
+				_this10[_callbacks].onActivityStarted = callback;
 			});
 		}
 	}, {
 		key: 'pressButton',
 		value: function pressButton(name) {
-			var _this10 = this;
+			var _this11 = this;
 
 			var duration = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
 
@@ -337,11 +351,11 @@ var HarmonyHub = function () {
 			var nameTitle = _changeCase2.default.title(name);
 			var nameNoSpaces = nameTitle.replace(/\s/g, '');
 			return new Promise(function (resolve, reject) {
-				_this10.getCurrentActivity().then(function (_ref) {
+				_this11.getCurrentActivity().then(function (_ref) {
 					var id = _ref.id;
 
 					if (id === '-1') return reject('No activity currently running');
-					var activities = _lodash2.default.get(_this10[_config], 'data.activity');
+					var activities = _lodash2.default.get(_this11[_config], 'data.activity');
 					if (!activities) return reject('Activities not found');
 					var activity = _lodash2.default.find(activities, { id: id });
 					if (!activity || !activity.controlGroup) return reject('Activity not found');
@@ -353,7 +367,7 @@ var HarmonyHub = function () {
 						if (button) break;
 					}
 					if (!button) return reject('Button "' + name + '" not found');
-					_this10[_pressButton](button, duration, function (err) {
+					_this11[_pressButton](button, duration, function (err) {
 						if (err) return reject(err);
 						resolve();
 					});

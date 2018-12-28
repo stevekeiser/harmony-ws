@@ -11,11 +11,11 @@ hub.getActivities()
     .then((activities) => {
         console.log(activities);
         // [
-        //    { id: '-1', name: 'PowerOff' },
-        //    { id: '21642159', name: 'Chromecast' },
-        //    { id: '26240332', name: 'TV' },
-        //    { id: '26240296', name: 'Roku' },
-        //    { id: '21641746', name: 'Blu-ray' }
+        //    { id: '-1', name: 'off' },
+        //    { id: '21642159', name: 'chromecast' },
+        //    { id: '26240332', name: 'tv' },
+        //    { id: '26240296', name: 'roku' },
+        //    { id: '21641746', name: 'blu_ray' }
         // ]
     })
 
@@ -24,12 +24,13 @@ hub.getCurrentActivity()
         console.log(`Current activity is: ${activity.name}`);
     });
 
-hub.runActivity('Chromecast')
+// start an activity by id or name (case insensitive)
+hub.startActivity('chromecast')
     .then(() => {
-        console.log('Started Chromecast');
+        console.log('Starting Chromecast');
     });
 
-// press a button relative to the current activity
+// press a button (relative to the current activity)
 hub.pressButton('volume down', 2000)
     .then(() => {
         console.log('Pressed volume down for 2 seconds');
@@ -39,4 +40,10 @@ hub.pressButton('volume down', 2000)
 hub.onActivityStarted((activity) => {
     console.log(`Activity started: ${activity.name}`);
 });
+
+// refresh internal cache
+hub.refresh()
+    .then((activity) => {
+        console.log('Updated activity listing');
+    });
 ```

@@ -4,10 +4,10 @@ import HarmonyHub from '.';
  
 const hub = new HarmonyHub('192.168.1.20');
  
-// hub.getActivities()
-//     .then((list) => {
-//         console.log(list);
-//     })
+hub.getActivities()
+    .then((list) => {
+        console.log(list);
+    })
  
 // hub.getCurrentActivity()
 //     .then((activity) => {
@@ -24,6 +24,6 @@ const hub = new HarmonyHub('192.168.1.20');
 //         console.log('Pressed button');
 //     });
  
-hub.onActivityStarted((activity) => {
-    console.log(`Activity started: ${activity.name}`);
-});
+// hub.onActivityStarted((activity) => {
+//     console.log(`Activity started: ${activity.name}`);
+// });

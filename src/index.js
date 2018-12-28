@@ -86,10 +86,7 @@ class HarmonyHub {
 				this[_timeouts].socket = setInterval(() => {
 					socket.ping();
 					this[_pingCount]++;
-					if (this[_pingCount] >= 2) {
-						socket.close();
-						this[_resetSocket]();
-					}
+					if (this[_pingCount] >= 2) this[_resetSocket]();
 				}, PING_INTERVAL);
 				this[_getConfig]((err) => {
 					callback(err);
@@ -116,12 +113,13 @@ class HarmonyHub {
 			});
 
 			socket.on('close', () => {
-				this[_resetSocket]();
+				this[_resetSocket](false);
 			});
 		});
 	}
 
-	[_resetSocket]() {
+	[_resetSocket](close = true) {
+		if (close && this[_socket]) this[_socket].close();
 		this[_socket] = null;
 		this[_started] = false;
 		clearInterval(this[_timeouts].socket);
@@ -194,6 +192,16 @@ class HarmonyHub {
 		async.eachSeries(list, run, callback);
 	}
 
+	refresh() {
+		this[_resetSocket]();
+		return new Promise((resolve, reject) => {
+			this[_initSocket]((err) => {
+				if (err) return reject(err);
+				resolve();
+			});
+		});
+	}
+
 	getActivities() {
 		return new Promise((resolve, reject) => {
 			this[_initSocket]((err) => {
@@ -202,7 +210,8 @@ class HarmonyHub {
 				if (!activities) return reject('Activities not found');
 				const list = [];
 				activities.forEach((activity) => {
-					const { id, label: name } = activity;
+					const { id, label } = activity;
+					const name = id === '-1' ? 'off' : changeCase.snake(_.trim(label));
 					list.push({ id, name });
 				});
 				resolve(list);
@@ -210,8 +219,8 @@ class HarmonyHub {
 		});
 	}
 
-	runActivity(id) {
-		id = _.trim(id);
+	startActivity(id) {
+		id = changeCase.snake(_.trim(id));
 		return new Promise((resolve, reject) => {
 			this.getActivities()
 				.then((activities) => {
