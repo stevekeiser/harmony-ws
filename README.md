@@ -1,6 +1,10 @@
 # harmony-ws
 
-Websocket-based interface for the Harmony Hub. Works with the latest firmware that killed support for XMPP.
+### Control a Logitech Harmony Hub via the local network
+
+Under the hood, this is a WebSocket implementation that works without XMPP. It is compatible with hub firmware 4.15.206 (released late December 2018) that broke errbody.
+<br>
+<br>
 
 ```javascript
 import HarmonyHub from 'harmony-ws';
@@ -27,13 +31,7 @@ hub.getCurrentActivity()
 // start an activity by id or name (case insensitive)
 hub.startActivity('chromecast')
     .then(() => {
-        console.log('Starting Chromecast');
-    });
-
-// press a button (relative to the current activity)
-hub.pressButton('volume down', 2000)
-    .then(() => {
-        console.log('Pressed volume down for 2 seconds');
+        console.log('Started Chromecast activity');
     });
 
 // listen for changes to the current activity
@@ -41,9 +39,15 @@ hub.onActivityStarted((activity) => {
     console.log(`Activity started: ${activity.name}`);
 });
 
+// press a button (relative to the current activity)
+hub.pressButton('volume down', 2000)
+    .then(() => {
+        console.log('Pressed volume down for 2 seconds');
+    });
+
 // refresh internal cache
 hub.refresh()
-    .then((activity) => {
+    .then(() => {
         console.log('Updated activity listing');
     });
 ```
