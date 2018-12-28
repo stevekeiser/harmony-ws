@@ -248,27 +248,14 @@ var HarmonyHub = function () {
 			_async2.default.eachSeries(list, run, callback);
 		}
 	}, {
-		key: 'refresh',
-		value: function refresh() {
+		key: 'getActivities',
+		value: function getActivities() {
 			var _this6 = this;
 
-			this[_resetSocket]();
 			return new Promise(function (resolve, reject) {
 				_this6[_initSocket](function (err) {
 					if (err) return reject(err);
-					resolve();
-				});
-			});
-		}
-	}, {
-		key: 'getActivities',
-		value: function getActivities() {
-			var _this7 = this;
-
-			return new Promise(function (resolve, reject) {
-				_this7[_initSocket](function (err) {
-					if (err) return reject(err);
-					var activities = _lodash2.default.get(_this7[_config], 'data.activity');
+					var activities = _lodash2.default.get(_this6[_config], 'data.activity');
 					if (!activities) return reject('Activities not found');
 					var list = [];
 					activities.forEach(function (activity) {
@@ -276,7 +263,7 @@ var HarmonyHub = function () {
 						    label = activity.label;
 
 						var name = id === '-1' ? 'off' : _changeCase2.default.snake(_lodash2.default.trim(label));
-						list.push({ id: id, name: name });
+						list.push({ id: id, name: name, label: label });
 					});
 					resolve(list);
 				});
@@ -285,11 +272,11 @@ var HarmonyHub = function () {
 	}, {
 		key: 'startActivity',
 		value: function startActivity(id) {
-			var _this8 = this;
+			var _this7 = this;
 
 			id = _changeCase2.default.snake(_lodash2.default.trim(id));
 			return new Promise(function (resolve, reject) {
-				_this8.getActivities().then(function (activities) {
+				_this7.getActivities().then(function (activities) {
 					var activity = _lodash2.default.find(activities, { name: id });
 					if (!activity) activity = _lodash2.default.find(activities, { id: id });
 					if (!activity) return reject('Activity not found');
@@ -300,9 +287,9 @@ var HarmonyHub = function () {
 						args: { rule: 'start' },
 						activityId: activity.id
 					};
-					_this8[_runCmd]({ cmd: cmd, params: params }, function (err) {
+					_this7[_runCmd]({ cmd: cmd, params: params }, function (err) {
 						if (err) return reject(err);
-						resolve();
+						resolve(activity);
 					});
 				}).catch(function (err) {
 					return reject(err);
@@ -312,16 +299,16 @@ var HarmonyHub = function () {
 	}, {
 		key: 'getCurrentActivity',
 		value: function getCurrentActivity() {
-			var _this9 = this;
+			var _this8 = this;
 
 			return new Promise(function (resolve, reject) {
 				var cmd = ENGINE + '?getCurrentActivity';
 				var params = { verb: 'get', format: 'json' };
-				_this9[_runCmd]({ cmd: cmd, params: params }, function (err, ob) {
+				_this8[_runCmd]({ cmd: cmd, params: params }, function (err, ob) {
 					if (err) return reject(err);
 					var id = _lodash2.default.get(ob, 'data.result');
 					if (!id) return reject('Activity not found');
-					_this9.getActivities().then(function (activities) {
+					_this8.getActivities().then(function (activities) {
 						var activity = _lodash2.default.find(activities, { id: id });
 						if (!activity) return reject('Activity not found');
 						resolve(activity);
@@ -334,10 +321,27 @@ var HarmonyHub = function () {
 	}, {
 		key: 'onActivityStarted',
 		value: function onActivityStarted(callback) {
-			var _this10 = this;
+			var _this9 = this;
 
 			this[_initSocket](function () {
-				_this10[_callbacks].onActivityStarted = callback;
+				_this9[_callbacks].onActivityStarted = callback;
+			});
+		}
+	}, {
+		key: 'turnOff',
+		value: function turnOff() {
+			return this.startActivity('off');
+		}
+	}, {
+		key: 'refresh',
+		value: function refresh() {
+			var _this10 = this;
+
+			return new Promise(function (resolve, reject) {
+				_this10[_getConfig](function (err) {
+					if (err) return reject(err);
+					_this10.getActivities().then(resolve).catch(reject);
+				});
 			});
 		}
 	}, {
@@ -352,9 +356,10 @@ var HarmonyHub = function () {
 			var nameNoSpaces = nameTitle.replace(/\s/g, '');
 			return new Promise(function (resolve, reject) {
 				_this11.getCurrentActivity().then(function (_ref) {
-					var id = _ref.id;
+					var id = _ref.id,
+					    name = _ref.name;
 
-					if (id === '-1') return reject('No activity currently running');
+					if (name === 'off') return reject('No activity currently running');
 					var activities = _lodash2.default.get(_this11[_config], 'data.activity');
 					if (!activities) return reject('Activities not found');
 					var activity = _lodash2.default.find(activities, { id: id });
@@ -366,10 +371,14 @@ var HarmonyHub = function () {
 						if (!button) button = _lodash2.default.find(group.function, { label: nameTitle });
 						if (button) break;
 					}
-					if (!button) return reject('Button "' + name + '" not found');
+					if (!button) return reject('Button not found');
 					_this11[_pressButton](button, duration, function (err) {
 						if (err) return reject(err);
-						resolve();
+						resolve({
+							name: _changeCase2.default.snake(button.name),
+							label: button.label,
+							duration: duration
+						});
 					});
 				}).catch(function (err) {
 					return reject(err);

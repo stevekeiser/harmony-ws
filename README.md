@@ -14,40 +14,42 @@ const hub = new HarmonyHub('192.168.1.20');
 hub.getActivities()
     .then((activities) => {
         console.log(activities);
-        // [
-        //    { id: '-1', name: 'off' },
-        //    { id: '21642159', name: 'chromecast' },
-        //    { id: '26240332', name: 'tv' },
-        //    { id: '26240296', name: 'roku' },
-        //    { id: '21641746', name: 'blu_ray' }
-        // ]
+        // [ { id: '-1', name: 'off', label: 'PowerOff' },
+        // { id: '21642159', name: 'chromecast', label: 'Chromecast' },
+        // { id: '26240332', name: 'tv', label: 'TV' },
+        // { id: '26240296', name: 'roku', label: 'Roku' },
+        // { id: '21641746', name: 'blu_ray', label: 'Blu-ray' } ]
     })
 
 hub.getCurrentActivity()
     .then((activity) => {
-        console.log(`Current activity is: ${activity.name}`);
+        console.log(`Current activity is: ${activity.label}`);
     });
 
-// start an activity by id or name (case insensitive)
+// start an activity by id, name, or label
 hub.startActivity('chromecast')
-    .then(() => {
-        console.log('Started Chromecast activity');
+    .then((activity) => {
+        console.log(`Started activity: ${activity.label}`);
     });
 
 // listen for changes to the current activity
 hub.onActivityStarted((activity) => {
-    console.log(`Activity started: ${activity.name}`);
+    console.log(`Activity started: ${activity.label}`);
 });
 
-// press a button (relative to the current activity)
+// press a button on the current activity
+// optional second param is how long to hold the button (in milliseconds)
 hub.pressButton('volume down', 2000)
-    .then(() => {
-        console.log('Pressed volume down for 2 seconds');
+    .then((button) => {
+        console.log(`Pressed button: ${button.label}`);
     });
 
-// refresh internal cache
+// alias for startActivity('off')
+hub.turnOff();
+
+// refresh the internal cache
 hub.refresh()
-    .then(() => {
-        console.log('Updated activity listing');
+    .then((activities) => {
+        console.log('Updated activity list', activities);
     });
 ```

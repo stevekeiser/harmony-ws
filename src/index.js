@@ -192,16 +192,6 @@ class HarmonyHub {
 		async.eachSeries(list, run, callback);
 	}
 
-	refresh() {
-		this[_resetSocket]();
-		return new Promise((resolve, reject) => {
-			this[_initSocket]((err) => {
-				if (err) return reject(err);
-				resolve();
-			});
-		});
-	}
-
 	getActivities() {
 		return new Promise((resolve, reject) => {
 			this[_initSocket]((err) => {
@@ -212,7 +202,7 @@ class HarmonyHub {
 				activities.forEach((activity) => {
 					const { id, label } = activity;
 					const name = id === '-1' ? 'off' : changeCase.snake(_.trim(label));
-					list.push({ id, name });
+					list.push({ id, name, label });
 				});
 				resolve(list);
 			});
@@ -236,7 +226,7 @@ class HarmonyHub {
 					};
 					this[_runCmd]({ cmd, params }, (err) => {
 						if (err) return reject(err);
-						resolve();
+						resolve(activity);
 					});
 				})
 				.catch((err) => reject(err));
@@ -268,14 +258,29 @@ class HarmonyHub {
 		});
 	}
 
+	turnOff() {
+		return this.startActivity('off');
+	}
+
+	refresh() {
+		return new Promise((resolve, reject) => {
+			this[_getConfig]((err) => {
+				if (err) return reject(err);
+				this.getActivities()
+					.then(resolve)
+					.catch(reject);
+			});
+		});
+	}
+
 	pressButton(name, duration = 0) {
 		name = _.trim(name);
 		const nameTitle = changeCase.title(name);
 		const nameNoSpaces = nameTitle.replace(/\s/g, '');
 		return new Promise((resolve, reject) => {
 			this.getCurrentActivity()
-				.then(({ id }) => {
-					if (id === '-1') return reject('No activity currently running');
+				.then(({ id, name }) => {
+					if (name === 'off') return reject('No activity currently running');
 					const activities = _.get(this[_config], 'data.activity');
 					if (!activities) return reject('Activities not found');
 					const activity = _.find(activities, { id });
@@ -287,10 +292,14 @@ class HarmonyHub {
 						if (!button) button = _.find(group.function, { label: nameTitle });
 						if (button) break;
 					}
-					if (!button) return reject(`Button "${name}" not found`);
+					if (!button) return reject('Button not found');
 					this[_pressButton](button, duration, (err) => {
 						if (err) return reject(err);
-						resolve();
+						resolve({
+							name: changeCase.snake(button.name),
+							label: button.label,
+							duration,
+						});
 					});
 				})
 				.catch((err) => reject(err));
