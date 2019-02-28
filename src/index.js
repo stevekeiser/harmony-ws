@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import async from 'async';
-import urlParser from 'url';
+// import urlParser from 'url';
 import request from 'request';
 import WebSocket from 'ws';
 import changeCase from 'change-case';
@@ -9,6 +9,8 @@ import changeCase from 'change-case';
 const PORT = '8088';
 const TIMEOUT = 10000;
 const PING_INTERVAL = 10000;
+const DOMAIN = 'svcs.myharmony.com';
+const ORIGIN = 'http://sl.dhg.myharmony.com';
 const ENGINE = 'vnd.logitech.harmony/vnd.logitech.harmony.engine';
 const EVENT_NOTIFY = 'connect.stateDigest?notify';
 
@@ -57,14 +59,14 @@ class HarmonyHub {
 			url: `http://${this[_ip]}:${PORT}`,
 			method: 'POST',
 			headers: {
-				Origin: 'http://localhost.nebula.myharmony.com',
+				Origin: ORIGIN,
 				'Content-Type': 'application/json',
 				Accept: 'application/json',
 				'Accept-Charset': 'utf-8',
 			},
 			body: {
 				id: 1,
-				cmd: 'connect.discoveryinfo?get',
+				cmd: 'setup.account?getProvisionInfo',
 				params: {},
 			},
 			json: true,
@@ -72,11 +74,11 @@ class HarmonyHub {
 
 		request(config, (err, response, body) => {
 			if (err) return callback(err);
-			const hubId = _.get(body, 'data.remoteId', false);
-			const url = _.get(body, 'data.discoveryServerUri', '');
+			const hubId = _.get(body, 'data.activeRemoteId', false);
+			// const url = _.get(body, 'data.discoveryServerUri', '');
 			if (!hubId) return callback('Hub not found');
-			const domain = urlParser.parse(url).hostname;
-			const wsUrl = `ws://${this[_ip]}:${PORT}/?domain=${domain}&hubId=${hubId}`;
+			// const domain = urlParser.parse(url).hostname;
+			const wsUrl = `ws://${this[_ip]}:${PORT}/?domain=${DOMAIN}&hubId=${hubId}`;
 			const socket = new WebSocket(wsUrl);
 			this[_hubId] = hubId;
 
