@@ -5,6 +5,8 @@ Object.defineProperty(exports, "__esModule", {
 });
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+// import urlParser from 'url';
+
 
 var _lodash = require('lodash');
 
@@ -13,10 +15,6 @@ var _lodash2 = _interopRequireDefault(_lodash);
 var _async = require('async');
 
 var _async2 = _interopRequireDefault(_async);
-
-var _url = require('url');
-
-var _url2 = _interopRequireDefault(_url);
 
 var _request = require('request');
 
@@ -38,6 +36,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 var PORT = '8088';
 var TIMEOUT = 10000;
 var PING_INTERVAL = 10000;
+var DOMAIN = 'svcs.myharmony.com';
+var ORIGIN = 'http://sl.dhg.myharmony.com';
 var ENGINE = 'vnd.logitech.harmony/vnd.logitech.harmony.engine';
 var EVENT_NOTIFY = 'connect.stateDigest?notify';
 
@@ -92,14 +92,14 @@ var HarmonyHub = function () {
 				url: 'http://' + this[_ip] + ':' + PORT,
 				method: 'POST',
 				headers: {
-					Origin: 'http://localhost.nebula.myharmony.com',
+					Origin: ORIGIN,
 					'Content-Type': 'application/json',
 					Accept: 'application/json',
 					'Accept-Charset': 'utf-8'
 				},
 				body: {
 					id: 1,
-					cmd: 'connect.discoveryinfo?get',
+					cmd: 'setup.account?getProvisionInfo',
 					params: {}
 				},
 				json: true
@@ -107,11 +107,11 @@ var HarmonyHub = function () {
 
 			(0, _request2.default)(config, function (err, response, body) {
 				if (err) return callback(err);
-				var hubId = _lodash2.default.get(body, 'data.remoteId', false);
-				var url = _lodash2.default.get(body, 'data.discoveryServerUri', '');
+				var hubId = _lodash2.default.get(body, 'data.activeRemoteId', false);
+				// const url = _.get(body, 'data.discoveryServerUri', '');
 				if (!hubId) return callback('Hub not found');
-				var domain = _url2.default.parse(url).hostname;
-				var wsUrl = 'ws://' + _this[_ip] + ':' + PORT + '/?domain=' + domain + '&hubId=' + hubId;
+				// const domain = urlParser.parse(url).hostname;
+				var wsUrl = 'ws://' + _this[_ip] + ':' + PORT + '/?domain=' + DOMAIN + '&hubId=' + hubId;
 				var socket = new _ws2.default(wsUrl);
 				_this[_hubId] = hubId;
 
