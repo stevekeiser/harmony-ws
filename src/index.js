@@ -275,21 +275,32 @@ class HarmonyHub {
 		});
 	}
 
-	pressButton(name, duration = 0) {
+	pressButton(name, duration = 0, device) {
 		name = _.trim(name);
 		const nameTitle = changeCase.title(name);
 		const nameNoSpaces = nameTitle.replace(/\s/g, '');
+		if (_.isString(duration)) {
+			device = duration;
+			duration = 0;
+		}
 		return new Promise((resolve, reject) => {
 			this.getCurrentActivity()
 				.then(({ id, name }) => {
-					if (name === 'off') return reject('No activity currently running');
-					const activities = _.get(this[_config], 'data.activity');
-					if (!activities) return reject('Activities not found');
-					const activity = _.find(activities, { id });
-					if (!activity || !activity.controlGroup) return reject('Activity not found');
+					let ob = null;
+					if (device) {
+						const devices = _.get(this[_config], 'data.device');
+						if (!devices) return reject('Devices not found');
+						ob = _.find(devices, { label: device });
+					} else {
+						if (name === 'off') return reject('No activity currently running');
+						const activities = _.get(this[_config], 'data.activity');
+						if (!activities) return reject('Activities not found');
+						ob = _.find(activities, { id });
+					}
+					if (!ob || !ob.controlGroup) return reject(`${device ? 'Device' : 'Activity'} not found`);
 					let button = null;
-					for (let i = 0; i < activity.controlGroup.length; i++) {
-						const group = activity.controlGroup[i];
+					for (let i = 0; i < ob.controlGroup.length; i++) {
+						const group = ob.controlGroup[i];
 						button = _.find(group.function, { name: nameNoSpaces });
 						if (!button) button = _.find(group.function, { label: nameTitle });
 						if (button) break;

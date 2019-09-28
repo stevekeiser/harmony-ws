@@ -350,23 +350,35 @@ var HarmonyHub = function () {
 			var _this11 = this;
 
 			var duration = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+			var device = arguments[2];
 
 			name = _lodash2.default.trim(name);
 			var nameTitle = _changeCase2.default.title(name);
 			var nameNoSpaces = nameTitle.replace(/\s/g, '');
+			if (_lodash2.default.isString(duration)) {
+				device = duration;
+				duration = 0;
+			}
 			return new Promise(function (resolve, reject) {
 				_this11.getCurrentActivity().then(function (_ref) {
 					var id = _ref.id,
 					    name = _ref.name;
 
-					if (name === 'off') return reject('No activity currently running');
-					var activities = _lodash2.default.get(_this11[_config], 'data.activity');
-					if (!activities) return reject('Activities not found');
-					var activity = _lodash2.default.find(activities, { id: id });
-					if (!activity || !activity.controlGroup) return reject('Activity not found');
+					var ob = null;
+					if (device) {
+						var devices = _lodash2.default.get(_this11[_config], 'data.device');
+						if (!devices) return reject('Devices not found');
+						ob = _lodash2.default.find(devices, { label: device });
+					} else {
+						if (name === 'off') return reject('No activity currently running');
+						var activities = _lodash2.default.get(_this11[_config], 'data.activity');
+						if (!activities) return reject('Activities not found');
+						ob = _lodash2.default.find(activities, { id: id });
+					}
+					if (!ob || !ob.controlGroup) return reject((device ? 'Device' : 'Activity') + ' not found');
 					var button = null;
-					for (var i = 0; i < activity.controlGroup.length; i++) {
-						var group = activity.controlGroup[i];
+					for (var i = 0; i < ob.controlGroup.length; i++) {
+						var group = ob.controlGroup[i];
 						button = _lodash2.default.find(group.function, { name: nameNoSpaces });
 						if (!button) button = _lodash2.default.find(group.function, { label: nameTitle });
 						if (button) break;
