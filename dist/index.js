@@ -175,6 +175,9 @@ var HarmonyHub = function () {
 			var params = { verb: 'get', format: 'json' };
 			this[_runCmd]({ cmd: cmd, params: params }, function (err, ob) {
 				_this2[_config] = ob;
+				_lodash2.default.get(ob, 'data.device', []).forEach(function (device) {
+					device.label = _changeCase2.default.snake(device.label);
+				});
 				callback(err);
 			});
 		}
@@ -366,6 +369,7 @@ var HarmonyHub = function () {
 
 					var ob = null;
 					if (device) {
+						device = _changeCase2.default.snake(device);
 						var devices = _lodash2.default.get(_this11[_config], 'data.device');
 						if (!devices) return reject('Devices not found');
 						ob = _lodash2.default.find(devices, { label: device });

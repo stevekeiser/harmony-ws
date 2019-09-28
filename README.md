@@ -37,9 +37,10 @@ hub.onActivityStarted((activity) => {
     console.log(`Activity started: ${activity.label}`);
 });
 
-// press a button on the current activity
+// press a button (on the current activity or a specific device)
 // optional second param is how long to hold the button (in milliseconds)
-hub.pressButton('volume down', 2000)
+// optional second/third param is which device to use
+hub.pressButton('volume down', 2000, 'samsung tv')
     .then((button) => {
         console.log(`Pressed button: ${button.label}`);
     });

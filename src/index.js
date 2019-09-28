@@ -132,6 +132,9 @@ class HarmonyHub {
 		const params = { verb: 'get', format: 'json' };
 		this[_runCmd]({ cmd, params }, (err, ob) => {
 			this[_config] = ob;
+			_.get(ob, 'data.device', []).forEach((device) => {
+				device.label = changeCase.snake(device.label);
+			});
 			callback(err);
 		});
 	}
@@ -288,6 +291,7 @@ class HarmonyHub {
 				.then(({ id, name }) => {
 					let ob = null;
 					if (device) {
+						device = changeCase.snake(device);
 						const devices = _.get(this[_config], 'data.device');
 						if (!devices) return reject('Devices not found');
 						ob = _.find(devices, { label: device });
